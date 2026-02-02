@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Service
@@ -52,8 +53,18 @@ public class HotelServiceImpl implements HotelService{
     public void deleteHotelById(Long id) {
         boolean exist = hotelRepository.existsById(id);
         if(!exist) throw new ResourceNotFoundException("Hotel not found with Id : "+id);
-
         hotelRepository.deleteById(id);
     }
+    @Override
+    public void activateHotel(Long hotelId) {
+        log.info("Activating the hotel with ID: {}", hotelId);
+        Hotel hotel = hotelRepository
+                .findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: "+hotelId));
 
+        hotel.setActive(true);
+
+        // assuming only do it once
+
+    }
 }
