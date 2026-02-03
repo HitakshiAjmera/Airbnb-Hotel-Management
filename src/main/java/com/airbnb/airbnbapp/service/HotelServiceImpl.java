@@ -2,6 +2,7 @@ package com.airbnb.airbnbapp.service;
 
 import com.airbnb.airbnbapp.dto.HotelDto;
 import com.airbnb.airbnbapp.entity.Hotel;
+import com.airbnb.airbnbapp.entity.Room;
 import com.airbnb.airbnbapp.exception.ResourceNotFoundException;
 import com.airbnb.airbnbapp.repository.HotelRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class HotelServiceImpl implements HotelService{
 
     private final HotelRepository hotelRepository ;
     private final ModelMapper modelMapper ;
+    private final InventoryService inventoryService;
     @Override
     public HotelDto createNewHotel(HotelDto hotelDto)
     {
@@ -49,11 +51,23 @@ public class HotelServiceImpl implements HotelService{
          return modelMapper.map(hotel,HotelDto.class);
     }
 
+
     @Override
-    public void deleteHotelById(Long id) {
+   /* public void deleteHotelById(Long id) {
         boolean exist = hotelRepository.existsById(id);
         if(!exist) throw new ResourceNotFoundException("Hotel not found with Id : "+id);
         hotelRepository.deleteById(id);
+
+    }*/
+    public void deleteHotelById(Long id) {
+        Hotel hotel = hotelRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: "+id));
+
+        hotelRepository.deleteById(id);
+        for(Room room: hotel.getRooms()) {
+            inventoryService.deleteFutureInventories(room);
+        }
     }
     @Override
     public void activateHotel(Long hotelId) {
@@ -65,6 +79,9 @@ public class HotelServiceImpl implements HotelService{
         hotel.setActive(true);
 
         // assuming only do it once
+        for(Room room: hotel.getRooms()) {
+            inventoryService.initializeRoomForAYear(room);
+        }
 
     }
 }
